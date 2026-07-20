@@ -1,5 +1,5 @@
 import { IsEnum, IsOptional, IsString, Length } from 'class-validator';
-import { BusinessStatus } from '../entities/business.entity';
+import { BusinessPlan, BusinessStatus } from '../entities/business.entity';
 
 export class CreateBusinessDto {
   @IsString()
@@ -27,4 +27,8 @@ export class CreateBusinessDto {
   @IsOptional()
   @IsEnum(BusinessStatus)
   status?: BusinessStatus;
+
+  @IsOptional()
+  @IsEnum(BusinessPlan)
+  subscriptionType?: BusinessPlan;
 }

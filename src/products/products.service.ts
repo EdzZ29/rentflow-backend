@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { AuthUser } from '../auth/auth.types';
 import {
   Business,
+  BusinessPlan,
   BusinessStatus,
 } from '../businesses/entities/business.entity';
 import { Reservation } from '../reservations/entities/reservation.entity';
@@ -80,7 +81,10 @@ export class ProductsService {
       .where('p.availability = :avail', {
         avail: ProductAvailability.AVAILABLE,
       })
-      .andWhere('b.status = :status', { status: BusinessStatus.ACTIVE });
+      // Public marketplace: only published products of active Marketplace businesses.
+      .andWhere('p.isPublished = :published', { published: true })
+      .andWhere('b.status = :status', { status: BusinessStatus.ACTIVE })
+      .andWhere('b.subscriptionType = :plan', { plan: BusinessPlan.MARKETPLACE });
 
     if (filter.category) {
       qb.andWhere('b.category = :category', { category: filter.category });
@@ -98,10 +102,14 @@ export class ProductsService {
 
   async findPublicOne(id: number) {
     const product = await this.productsRepository.findOne({
-      where: { id, availability: ProductAvailability.AVAILABLE },
+      where: { id, availability: ProductAvailability.AVAILABLE, isPublished: true },
       relations: { business: true },
     });
-    if (!product || product.business.status !== BusinessStatus.ACTIVE) {
+    if (
+      !product ||
+      product.business.status !== BusinessStatus.ACTIVE ||
+      product.business.subscriptionType !== BusinessPlan.MARKETPLACE
+    ) {
       throw new NotFoundException('Product not found');
     }
     const counts = await this.bookingCounts([product.id]);

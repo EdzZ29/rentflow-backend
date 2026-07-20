@@ -37,6 +37,11 @@ export class Product {
   @Column({ type: 'varchar', length: 20, default: ProductAvailability.AVAILABLE })
   availability!: ProductAvailability;
 
+  // Whether the owner has published this product to the public marketplace.
+  // Only shown to customers when its business is on the MARKETPLACE plan.
+  @Column({ type: 'boolean', default: false })
+  isPublished!: boolean;
+
   @ManyToOne(() => Business, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'businessId' })
   business!: Business;

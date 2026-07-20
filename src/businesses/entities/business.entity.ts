@@ -14,6 +14,14 @@ export enum BusinessStatus {
   PAUSED = 'paused',
 }
 
+// Which RentFlow plan the business is on.
+//   BUSINESS    → private internal management only (hidden from the marketplace)
+//   MARKETPLACE → everything in BUSINESS + published publicly to customers
+export enum BusinessPlan {
+  BUSINESS = 'business',
+  MARKETPLACE = 'marketplace',
+}
+
 @Entity({ name: 'businesses' })
 export class Business {
   @PrimaryGeneratedColumn()
@@ -40,6 +48,11 @@ export class Business {
 
   @Column({ type: 'varchar', length: 20, default: BusinessStatus.ACTIVE })
   status!: BusinessStatus;
+
+  // Subscription tier. Businesses default to private management; they can be
+  // upgraded to MARKETPLACE to appear on the public customer platform.
+  @Column({ type: 'varchar', length: 20, default: BusinessPlan.BUSINESS })
+  subscriptionType!: BusinessPlan;
 
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ownerId' })

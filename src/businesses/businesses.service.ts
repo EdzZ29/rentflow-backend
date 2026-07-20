@@ -11,7 +11,7 @@ import { UserRole } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
 import { CreateBusinessDto } from './dto/create-business.dto';
 import { UpdateBusinessDto } from './dto/update-business.dto';
-import { Business, BusinessStatus } from './entities/business.entity';
+import { Business, BusinessPlan, BusinessStatus } from './entities/business.entity';
 
 @Injectable()
 export class BusinessesService {
@@ -102,7 +102,9 @@ export class BusinessesService {
       .createQueryBuilder('b')
       .leftJoin('b.owner', 'owner')
       .addSelect(['owner.fullName'])
-      .where('b.status = :status', { status: BusinessStatus.ACTIVE });
+      .where('b.status = :status', { status: BusinessStatus.ACTIVE })
+      // Only businesses on the Marketplace plan appear publicly.
+      .andWhere('b.subscriptionType = :plan', { plan: BusinessPlan.MARKETPLACE });
 
     if (filter.category) {
       qb.andWhere('b.category = :category', { category: filter.category });
@@ -120,7 +122,11 @@ export class BusinessesService {
 
   async findPublicOne(id: number) {
     const business = await this.businessesRepository.findOne({
-      where: { id, status: BusinessStatus.ACTIVE },
+      where: {
+        id,
+        status: BusinessStatus.ACTIVE,
+        subscriptionType: BusinessPlan.MARKETPLACE,
+      },
       relations: { owner: true },
     });
     if (!business) {

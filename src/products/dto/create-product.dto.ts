@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEnum,
   IsIn,
   IsInt,
@@ -34,4 +35,8 @@ export class CreateProductDto {
   @IsOptional()
   @IsEnum(ProductAvailability)
   availability?: ProductAvailability;
+
+  @IsOptional()
+  @IsBoolean()
+  isPublished?: boolean;
 }

@@ -1,9 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Business } from '../businesses/entities/business.entity';
+import { Business, BusinessPlan } from '../businesses/entities/business.entity';
+import { Product } from '../products/entities/product.entity';
 import { effectivePlan, isTrialActive } from '../subscription/plan-limits';
 import { PlanType, User, UserRole } from '../users/entities/user.entity';
+
+// Estimated monthly value of each owner-level billing plan (USD).
+const PLAN_MRR: Record<string, number> = {
+  [PlanType.MONTHLY]: 29,
+  [PlanType.YEARLY]: 290 / 12,
+};
 
 @Injectable()
 export class AdminService {
@@ -12,14 +19,37 @@ export class AdminService {
     private readonly usersRepository: Repository<User>,
     @InjectRepository(Business)
     private readonly businessesRepository: Repository<Business>,
+    @InjectRepository(Product)
+    private readonly productsRepository: Repository<Product>,
   ) {}
 
   async getStats() {
     const users = await this.usersRepository.find();
     const owners = users.filter((u) => u.role === UserRole.OWNER);
-    const businesses = await this.businessesRepository.count();
+    const businessList = await this.businessesRepository.find();
+    const businesses = businessList.length;
+
+    const marketplaceCount = businessList.filter(
+      (b) => b.subscriptionType === BusinessPlan.MARKETPLACE,
+    ).length;
+    const publishedProducts = await this.productsRepository.count({
+      where: { isPublished: true },
+    });
+    const estimatedMrr = owners.reduce(
+      (sum, o) => sum + (PLAN_MRR[effectivePlan(o)] ?? 0),
+      0,
+    );
 
     return {
+      marketplace: {
+        marketplace: marketplaceCount,
+        business: businesses - marketplaceCount,
+        publishedProducts,
+      },
+      revenue: {
+        estimatedMrr: Math.round(estimatedMrr),
+        estimatedArr: Math.round(estimatedMrr * 12),
+      },
       users: {
         total: users.length,
         admins: users.filter((u) => u.role === UserRole.ADMIN).length,
