@@ -19,6 +19,7 @@ import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PlanActiveGuard } from '../auth/guards/plan-active.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../users/entities/user.entity';
 import { BusinessesService } from './businesses.service';
@@ -33,6 +34,7 @@ export class BusinessesController {
   constructor(private readonly businessesService: BusinessesService) {}
 
   @Post()
+  @UseGuards(PlanActiveGuard)
   create(@Body() dto: CreateBusinessDto, @CurrentUser() user: AuthUser) {
     return this.businessesService.create(dto, user);
   }
@@ -48,6 +50,7 @@ export class BusinessesController {
   }
 
   @Patch(':id')
+  @UseGuards(PlanActiveGuard)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateBusinessDto,
@@ -57,6 +60,7 @@ export class BusinessesController {
   }
 
   @Post(':id/image')
+  @UseGuards(PlanActiveGuard)
   @UseInterceptors(FileInterceptor('image', businessImageUpload))
   uploadImage(
     @Param('id', ParseIntPipe) id: number,
@@ -74,6 +78,7 @@ export class BusinessesController {
   }
 
   @Delete(':id')
+  @UseGuards(PlanActiveGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
     return this.businessesService.remove(id, user);

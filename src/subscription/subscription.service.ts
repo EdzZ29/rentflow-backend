@@ -5,12 +5,16 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { Business } from '../businesses/entities/business.entity';
 import { PlanType, User } from '../users/entities/user.entity';
 import {
   businessLimitFor,
   effectivePlan,
+  isPlanActive,
   isTrialActive,
+  PLAN_DURATION_DAYS,
+  planDaysLeft,
   trialDaysLeft,
 } from './plan-limits';
 
@@ -23,6 +27,7 @@ export class SubscriptionService {
     private readonly usersRepository: Repository<User>,
     @InjectRepository(Business)
     private readonly businessesRepository: Repository<Business>,
+    private readonly activity: ActivityLogService,
   ) {}
 
   async getSummary(userId: number) {
@@ -44,15 +49,39 @@ export class SubscriptionService {
     user.trialEndsAt = trialEnds;
     user.planStartedAt = new Date();
     await this.usersRepository.save(user);
+    await this.activity.safeRecord({
+      userId,
+      category: 'plan',
+      action: 'trial_started',
+      title: 'Free trial started',
+      description: `Started a ${TRIAL_DAYS}-day free trial`,
+    });
     return this.getSummary(userId);
   }
 
   async choosePlan(userId: number, plan: PlanType) {
     const user = await this.getUser(userId);
+    const now = new Date();
     user.plan = plan;
-    user.planStartedAt = new Date();
+    user.planStartedAt = now;
     user.trialEndsAt = null;
+    // Paid plans run for a fixed period, then lapse until renewed.
+    const days = PLAN_DURATION_DAYS[plan];
+    if (days) {
+      const ends = new Date(now);
+      ends.setDate(ends.getDate() + days);
+      user.planEndsAt = ends;
+    } else {
+      user.planEndsAt = null;
+    }
     await this.usersRepository.save(user);
+    await this.activity.safeRecord({
+      userId,
+      category: 'plan',
+      action: 'changed',
+      title: 'Subscription updated',
+      description: `Switched to the ${plan} plan`,
+    });
     return this.getSummary(userId);
   }
 
@@ -70,8 +99,12 @@ export class SubscriptionService {
       effectivePlan: effectivePlan(user),
       trialEndsAt: user.trialEndsAt,
       planStartedAt: user.planStartedAt,
+      planEndsAt: user.planEndsAt,
       isTrialActive: isTrialActive(user),
       trialDaysLeft: trialDaysLeft(user),
+      // Can the owner use paid features right now?
+      isActive: isPlanActive(user),
+      planDaysLeft: planDaysLeft(user),
       businessLimit: businessLimitFor(user),
       businessesUsed,
     };

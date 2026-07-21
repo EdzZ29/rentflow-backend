@@ -13,3 +13,13 @@ export interface AuthUser {
   email: string;
   role: UserRole;
 }
+
+/** Normalized profile returned by an OAuth strategy's validate(). */
+export interface OAuthProfile {
+  provider: 'google' | 'facebook';
+  providerUserId: string;
+  email?: string;
+  emailVerified: boolean;
+  name?: string;
+  picture?: string;
+}

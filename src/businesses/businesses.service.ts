@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { AuthUser } from '../auth/auth.types';
 import { businessLimitFor, effectivePlan } from '../subscription/plan-limits';
 import { UserRole } from '../users/entities/user.entity';
@@ -19,6 +20,7 @@ export class BusinessesService {
     @InjectRepository(Business)
     private readonly businessesRepository: Repository<Business>,
     private readonly usersService: UsersService,
+    private readonly activity: ActivityLogService,
   ) {}
 
   async create(dto: CreateBusinessDto, actor: AuthUser): Promise<Business> {
@@ -43,7 +45,16 @@ export class BusinessesService {
       ...dto,
       ownerId: actor.id,
     });
-    return this.businessesRepository.save(business);
+    const saved = await this.businessesRepository.save(business);
+    await this.activity.safeRecord({
+      userId: saved.ownerId,
+      category: 'business',
+      action: 'created',
+      title: 'Business created',
+      description: `Added business "${saved.name}"`,
+      entityName: saved.name,
+    });
+    return saved;
   }
 
   findAll(actor: AuthUser): Promise<Business[]> {
@@ -76,17 +87,42 @@ export class BusinessesService {
   ): Promise<Business> {
     await this.findOne(id, actor); // enforces access + existence
     const business = await this.businessesRepository.preload({ id, ...dto });
-    return this.businessesRepository.save(business!);
+    const saved = await this.businessesRepository.save(business!);
+    await this.activity.safeRecord({
+      userId: saved.ownerId,
+      category: 'business',
+      action: 'updated',
+      title: 'Business updated',
+      description: `Updated business "${saved.name}"`,
+      entityName: saved.name,
+    });
+    return saved;
   }
 
   async remove(id: number, actor: AuthUser): Promise<void> {
-    await this.findOne(id, actor);
+    const business = await this.findOne(id, actor);
     await this.businessesRepository.delete(id);
+    await this.activity.safeRecord({
+      userId: business.ownerId,
+      category: 'business',
+      action: 'deleted',
+      title: 'Business deleted',
+      description: `Deleted business "${business.name}"`,
+      entityName: business.name,
+    });
   }
 
   async setImage(id: number, imageUrl: string, actor: AuthUser) {
-    await this.findOne(id, actor); // enforces ownership
+    const business = await this.findOne(id, actor); // enforces ownership
     await this.businessesRepository.update(id, { imageUrl });
+    await this.activity.safeRecord({
+      userId: business.ownerId,
+      category: 'business',
+      action: 'updated',
+      title: 'Business photo updated',
+      description: `Changed the photo for "${business.name}"`,
+      entityName: business.name,
+    });
     return this.businessesRepository.findOne({ where: { id } });
   }
 

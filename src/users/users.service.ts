@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -72,6 +73,27 @@ export class UsersService {
     return user;
   }
 
+  /** Look up a user by email (no passwordHash). */
+  findByEmail(email: string): Promise<User | null> {
+    return this.usersRepository.findOne({ where: { email } });
+  }
+
+  /**
+   * Resolve a customer by email, creating a lightweight account if none exists
+   * (used when an owner books on behalf of a walk-in customer). The generated
+   * password is random; the customer can set a real one via "forgot password".
+   */
+  async findOrCreateCustomer(fullName: string, email: string): Promise<User> {
+    const existing = await this.findByEmail(email);
+    if (existing) return existing;
+    return this.create({
+      fullName,
+      email,
+      password: randomBytes(24).toString('hex'),
+      role: UserRole.CUSTOMER,
+    });
+  }
+
   /** Includes the passwordHash column — used only by the auth layer. */
   findByEmailWithPassword(email: string): Promise<User | null> {
     return this.usersRepository
@@ -93,6 +115,11 @@ export class UsersService {
       throw new NotFoundException(`User ${id} not found`);
     }
     return this.usersRepository.save(user);
+  }
+
+  async setAvatar(id: number, avatarUrl: string): Promise<User> {
+    await this.usersRepository.update(id, { avatarUrl });
+    return this.findOne(id);
   }
 
   async remove(id: number): Promise<void> {

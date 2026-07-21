@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ActivityLogService } from '../activity-log/activity-log.service';
 import { AuthUser } from '../auth/auth.types';
 import {
   Business,
@@ -26,12 +27,22 @@ export class ProductsService {
     private readonly businessesRepository: Repository<Business>,
     @InjectRepository(Reservation)
     private readonly reservationsRepository: Repository<Reservation>,
+    private readonly activity: ActivityLogService,
   ) {}
 
   async create(dto: CreateProductDto, actor: AuthUser): Promise<Product> {
-    await this.assertOwnsBusiness(dto.businessId, actor);
+    const business = await this.assertOwnsBusiness(dto.businessId, actor);
     const product = this.productsRepository.create(dto);
-    return this.productsRepository.save(product);
+    const saved = await this.productsRepository.save(product);
+    await this.activity.safeRecord({
+      userId: business.ownerId,
+      category: 'product',
+      action: 'created',
+      title: 'Product created',
+      description: `Added "${saved.name}" to ${business.name}`,
+      entityName: saved.name,
+    });
+    return saved;
   }
 
   async findAllForBusiness(
@@ -56,20 +67,45 @@ export class ProductsService {
     dto: UpdateProductDto,
     actor: AuthUser,
   ): Promise<Product> {
-    await this.findOne(id, actor);
+    const existing = await this.findOne(id, actor);
     const product = await this.productsRepository.preload({ id, ...dto });
-    return this.productsRepository.save(product!);
+    const saved = await this.productsRepository.save(product!);
+    await this.logProduct(existing.businessId, 'updated', saved.name, `Updated "${saved.name}"`);
+    return saved;
   }
 
   async setImage(id: number, imageUrl: string, actor: AuthUser) {
-    await this.findOne(id, actor);
+    const existing = await this.findOne(id, actor);
     await this.productsRepository.update(id, { imageUrl });
+    await this.logProduct(existing.businessId, 'updated', existing.name, `Changed the photo for "${existing.name}"`);
     return this.getOrThrow(id);
   }
 
   async remove(id: number, actor: AuthUser): Promise<void> {
-    await this.findOne(id, actor);
+    const existing = await this.findOne(id, actor);
     await this.productsRepository.delete(id);
+    await this.logProduct(existing.businessId, 'deleted', existing.name, `Deleted "${existing.name}"`);
+  }
+
+  // Resolve the owning business and write a product activity entry (best-effort).
+  private async logProduct(
+    businessId: number,
+    action: string,
+    name: string,
+    description: string,
+  ): Promise<void> {
+    const business = await this.businessesRepository.findOne({
+      where: { id: businessId },
+    });
+    if (!business) return;
+    await this.activity.safeRecord({
+      userId: business.ownerId,
+      category: 'product',
+      action,
+      title: `Product ${action}`,
+      description,
+      entityName: name,
+    });
   }
 
   // ── Public browsing ───────────────────────────────────
@@ -155,16 +191,19 @@ export class ProductsService {
   }
 
   /** Owner may only touch products of businesses they own; admin may touch any. */
-  private async assertOwnsBusiness(businessId: number, actor: AuthUser) {
-    if (actor.role === UserRole.ADMIN) return;
+  private async assertOwnsBusiness(
+    businessId: number,
+    actor: AuthUser,
+  ): Promise<Business> {
     const business = await this.businessesRepository.findOne({
       where: { id: businessId },
     });
     if (!business) {
       throw new NotFoundException('Business not found');
     }
-    if (business.ownerId !== actor.id) {
+    if (actor.role !== UserRole.ADMIN && business.ownerId !== actor.id) {
       throw new ForbiddenException('You do not own this business');
     }
+    return business;
   }
 }

@@ -39,6 +39,12 @@ export class AuthService {
     return this.buildAuthResponse(user);
   }
 
+  // Public so the OAuth flow can issue OUR session after a social login —
+  // we always mint our own JWT, never trust the provider's token downstream.
+  issueAuthResponse(user: User) {
+    return this.buildAuthResponse(user);
+  }
+
   private buildAuthResponse(user: User) {
     const payload: JwtPayload = {
       sub: user.id,
@@ -53,6 +59,7 @@ export class AuthService {
         email: user.email,
         role: user.role,
         plan: user.plan,
+        avatarUrl: user.avatarUrl,
       },
     };
   }

@@ -20,6 +20,7 @@ import type { AuthUser } from '../auth/auth.types';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PlanActiveGuard } from '../auth/guards/plan-active.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { UserRole } from '../users/entities/user.entity';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -34,6 +35,7 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
+  @UseGuards(PlanActiveGuard)
   create(@Body() dto: CreateProductDto, @CurrentUser() user: AuthUser) {
     return this.productsService.create(dto, user);
   }
@@ -53,6 +55,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
+  @UseGuards(PlanActiveGuard)
   update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdateProductDto,
@@ -62,6 +65,7 @@ export class ProductsController {
   }
 
   @Post(':id/image')
+  @UseGuards(PlanActiveGuard)
   @UseInterceptors(FileInterceptor('image', productImageUpload))
   uploadImage(
     @Param('id', ParseIntPipe) id: number,
@@ -79,6 +83,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
+  @UseGuards(PlanActiveGuard)
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: AuthUser) {
     return this.productsService.remove(id, user);

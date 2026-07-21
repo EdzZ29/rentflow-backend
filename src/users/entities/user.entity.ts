@@ -40,6 +40,10 @@ export class User {
   @Column({ default: true })
   isActive!: boolean;
 
+  // Profile picture URL (e.g. from a linked Google/Facebook account).
+  @Column({ type: 'varchar', length: 300, nullable: true })
+  avatarUrl!: string | null;
+
   // Subscription (relevant for owners).
   @Column({ type: 'varchar', length: 20, default: PlanType.NONE })
   plan!: PlanType;
@@ -49,6 +53,11 @@ export class User {
 
   @Column({ type: 'timestamptz', nullable: true })
   planStartedAt!: Date | null;
+
+  // When a paid (monthly/yearly) plan lapses. Null means "no expiry set yet"
+  // and is treated as active, so existing paid accounts are never locked out.
+  @Column({ type: 'timestamptz', nullable: true })
+  planEndsAt!: Date | null;
 
   @CreateDateColumn()
   createdAt!: Date;
