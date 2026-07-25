@@ -24,6 +24,16 @@ export class CreateProductDto {
   @IsString()
   description?: string;
 
+  @IsOptional()
+  @IsString()
+  @Length(0, 4000)
+  rentalRules?: string;
+
+  @IsOptional()
+  @IsString()
+  @Length(0, 4000)
+  cancellationPolicy?: string;
+
   @IsNumber()
   @Min(0)
   pricePerDay: number;

@@ -13,10 +13,13 @@ import { BusinessesModule } from './businesses/businesses.module';
 import { DatabaseModule } from './database/database.module';
 import { DriversModule } from './drivers/drivers.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { PackagesModule } from './packages/packages.module';
 import { ProductsModule } from './products/products.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { ReservationsModule } from './reservations/reservations.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { SupportModule } from './support/support.module';
 import { TripsModule } from './trips/trips.module';
 import { UsersModule } from './users/users.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
@@ -34,8 +37,11 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     TripsModule,
     BusinessesModule,
     ProductsModule,
+    PackagesModule,
     ReservationsModule,
+    ReviewsModule,
     SubscriptionModule,
+    SupportModule,
     AdminModule,
     RealtimeModule,
     NotificationsModule,

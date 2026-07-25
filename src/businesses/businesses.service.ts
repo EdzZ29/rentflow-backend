@@ -7,6 +7,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ActivityLogService } from '../activity-log/activity-log.service';
 import { AuthUser } from '../auth/auth.types';
+import { ProductsService } from '../products/products.service';
+import { ReviewsService } from '../reviews/reviews.service';
 import { businessLimitFor, effectivePlan } from '../subscription/plan-limits';
 import { UserRole } from '../users/entities/user.entity';
 import { UsersService } from '../users/users.service';
@@ -20,6 +22,8 @@ export class BusinessesService {
     @InjectRepository(Business)
     private readonly businessesRepository: Repository<Business>,
     private readonly usersService: UsersService,
+    private readonly products: ProductsService,
+    private readonly reviews: ReviewsService,
     private readonly activity: ActivityLogService,
   ) {}
 
@@ -153,7 +157,8 @@ export class BusinessesService {
     }
 
     const rows = await qb.orderBy('b.createdAt', 'DESC').getMany();
-    return rows.map((b) => this.toPublic(b));
+    const ratings = await this.reviews.summaryByBusiness(rows.map((b) => b.id));
+    return rows.map((b) => this.toPublic(b, ratings[b.id]));
   }
 
   async findPublicOne(id: number) {
@@ -168,11 +173,15 @@ export class BusinessesService {
     if (!business) {
       throw new NotFoundException('Rental not found');
     }
-    return this.toPublic(business);
+    const [rating, products] = await Promise.all([
+      this.reviews.summaryForBusiness(business.id),
+      this.products.publicByBusiness(business.id),
+    ]);
+    return { ...this.toPublic(business, rating), products };
   }
 
   /** Only expose safe, non-sensitive fields to the public. */
-  private toPublic(b: Business) {
+  private toPublic(b: Business, rating?: { rating: number; reviewCount: number }) {
     return {
       id: b.id,
       name: b.name,
@@ -181,6 +190,8 @@ export class BusinessesService {
       location: b.location,
       imageUrl: b.imageUrl,
       ownerName: b.owner?.fullName ?? null,
+      rating: rating?.rating ?? 0,
+      reviewCount: rating?.reviewCount ?? 0,
       createdAt: b.createdAt,
     };
   }

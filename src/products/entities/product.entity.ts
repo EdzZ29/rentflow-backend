@@ -25,6 +25,14 @@ export class Product {
   @Column({ type: 'text', nullable: true })
   description!: string | null;
 
+  // House rules the renter must follow (e.g. valid ID, fuel policy, no smoking).
+  @Column({ type: 'text', nullable: true })
+  rentalRules!: string | null;
+
+  // What happens if the renter cancels — refund windows, fees, etc.
+  @Column({ type: 'text', nullable: true })
+  cancellationPolicy!: string | null;
+
   @Column({ type: 'numeric', precision: 10, scale: 2, default: 0 })
   pricePerDay!: number;
 

@@ -9,6 +9,7 @@ import { join } from 'path';
 import { AppModule } from './app.module';
 import { BUSINESS_UPLOAD_DIR } from './businesses/upload.config';
 import { PRODUCT_UPLOAD_DIR } from './products/upload.config';
+import { AVATAR_UPLOAD_DIR } from './users/avatar-upload.config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -24,7 +25,7 @@ async function bootstrap() {
   app.use(cookieParser());
 
   // Serve uploaded images from /uploads/*.
-  for (const dir of [PRODUCT_UPLOAD_DIR, BUSINESS_UPLOAD_DIR]) {
+  for (const dir of [PRODUCT_UPLOAD_DIR, BUSINESS_UPLOAD_DIR, AVATAR_UPLOAD_DIR]) {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   }
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });

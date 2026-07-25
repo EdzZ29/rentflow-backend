@@ -1,13 +1,21 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { Throttle } from '@nestjs/throttler';
 import type { Response } from 'express';
+import { User } from '../users/entities/user.entity';
+import { avatarImageUpload } from '../users/avatar-upload.config';
+import { UsersService } from '../users/users.service';
 import { ACCESS_COOKIE, accessCookieOptions } from './auth.cookie';
 import { AuthService } from './auth.service';
 import type { AuthUser } from './auth.types';
@@ -17,6 +25,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { PasswordResetService } from './password-reset.service';
 
@@ -25,6 +34,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly passwordReset: PasswordResetService,
+    private readonly usersService: UsersService,
   ) {}
 
   // Max 10 registrations per minute per IP.
@@ -84,11 +94,52 @@ export class AuthController {
     return { success: true, message: 'Your password has been updated.' };
   }
 
-  // Returns the currently authenticated user — lets the web/app restore
-  // session state on load (the browser sends the httpOnly cookie automatically).
+  // Returns the currently authenticated user's full profile — lets the web/app
+  // restore session state on load (the browser sends the cookie automatically).
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@CurrentUser() user: AuthUser) {
-    return user;
+  async me(@CurrentUser() user: AuthUser) {
+    return this.toProfile(await this.usersService.findOne(user.id));
+  }
+
+  // Update the signed-in user's own profile (name / email / password).
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  async updateMe(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: UpdateProfileDto,
+  ) {
+    return this.toProfile(await this.usersService.updateProfile(user.id, dto));
+  }
+
+  // Upload/replace the signed-in user's profile picture.
+  @UseGuards(JwtAuthGuard)
+  @Post('me/avatar')
+  @UseInterceptors(FileInterceptor('image', avatarImageUpload))
+  async uploadAvatar(
+    @CurrentUser() user: AuthUser,
+    @UploadedFile() file: { filename: string } | undefined,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No image file uploaded');
+    }
+    const updated = await this.usersService.setAvatar(
+      user.id,
+      `/uploads/avatars/${file.filename}`,
+    );
+    return this.toProfile(updated);
+  }
+
+  // The public profile shape shared by /me, PATCH /me and avatar upload — never
+  // leaks the password hash or other internal columns.
+  private toProfile(u: User) {
+    return {
+      id: u.id,
+      fullName: u.fullName,
+      email: u.email,
+      role: u.role,
+      plan: u.plan,
+      avatarUrl: u.avatarUrl,
+    };
   }
 }

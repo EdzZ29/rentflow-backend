@@ -9,5 +9,7 @@ import { Notification } from '../notifications/entities/notification.entity';
 export type RealtimeEvent =
   | { type: 'notification'; notification: Notification }
   | { type: 'reservation'; action: 'created' | 'updated'; reservationId: number }
+  | { type: 'review'; action: 'created' | 'replied'; reviewId: number }
+  | { type: 'support'; action: 'created' | 'message' | 'updated'; ticketId: number }
   | { type: 'activity'; log: ActivityLog }
   | { type: 'ping' };

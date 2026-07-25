@@ -260,6 +260,16 @@ export class ReservationsService {
         body: `${productName} — ${messages[status] ?? `Status updated to ${status}.`}`,
         link: '/customer/bookings',
       });
+      // Once a rental is complete, prompt the customer to leave a review.
+      if (status === ReservationStatus.COMPLETED) {
+        await this.safeNotify({
+          userId: customerId,
+          type: 'review.request',
+          title: 'How was your rental?',
+          body: `Leave a review for ${productName} to help other renters.`,
+          link: '/customer/reviews',
+        });
+      }
     }
 
     this.broadcastReservationChange(saved.id, 'updated', ownerId, customerId);

@@ -13,6 +13,7 @@ import {
   BusinessStatus,
 } from '../businesses/entities/business.entity';
 import { Reservation } from '../reservations/entities/reservation.entity';
+import { ReviewsService, RatingSummary } from '../reviews/reviews.service';
 import { UserRole } from '../users/entities/user.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -27,6 +28,7 @@ export class ProductsService {
     private readonly businessesRepository: Repository<Business>,
     @InjectRepository(Reservation)
     private readonly reservationsRepository: Repository<Reservation>,
+    private readonly reviews: ReviewsService,
     private readonly activity: ActivityLogService,
   ) {}
 
@@ -132,8 +134,12 @@ export class ProductsService {
     }
 
     const rows = await qb.orderBy('p.createdAt', 'DESC').getMany();
-    const counts = await this.bookingCounts(rows.map((p) => p.id));
-    return rows.map((p) => this.toPublic(p, counts[p.id] ?? 0));
+    const ids = rows.map((p) => p.id);
+    const [counts, ratings] = await Promise.all([
+      this.bookingCounts(ids),
+      this.reviews.summaryByProduct(ids),
+    ]);
+    return rows.map((p) => this.toPublic(p, counts[p.id] ?? 0, ratings[p.id]));
   }
 
   async findPublicOne(id: number) {
@@ -149,7 +155,42 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
     const counts = await this.bookingCounts([product.id]);
-    return this.toPublic(product, counts[product.id] ?? 0);
+    const rating = await this.reviews.summaryForOne(product.id);
+    return this.toPublic(product, counts[product.id] ?? 0, rating);
+  }
+
+  // Published, available products of a business (public storefront gating).
+  // Optionally excludes one product id and caps the result count.
+  async publicByBusiness(businessId: number, excludeId?: number, limit = 24) {
+    const qb = this.productsRepository
+      .createQueryBuilder('p')
+      .innerJoin('p.business', 'b')
+      .addSelect(['b.id', 'b.name', 'b.category', 'b.location'])
+      .where('p.businessId = :businessId', { businessId })
+      .andWhere('p.availability = :avail', {
+        avail: ProductAvailability.AVAILABLE,
+      })
+      .andWhere('p.isPublished = :published', { published: true })
+      .andWhere('b.status = :status', { status: BusinessStatus.ACTIVE })
+      .andWhere('b.subscriptionType = :plan', { plan: BusinessPlan.MARKETPLACE });
+
+    if (excludeId) qb.andWhere('p.id != :excludeId', { excludeId });
+
+    const rows = await qb.orderBy('p.createdAt', 'DESC').take(limit).getMany();
+    const ids = rows.map((p) => p.id);
+    const [counts, ratings] = await Promise.all([
+      this.bookingCounts(ids),
+      this.reviews.summaryByProduct(ids),
+    ]);
+    return rows.map((p) => this.toPublic(p, counts[p.id] ?? 0, ratings[p.id]));
+  }
+
+  // Other products from the same business (for the "More from this business"
+  // section on a product page). Excludes the product being viewed.
+  async relatedByBusiness(id: number, limit = 6) {
+    const product = await this.productsRepository.findOne({ where: { id } });
+    if (!product) return [];
+    return this.publicByBusiness(product.businessId, id, limit);
   }
 
   /** Number of reservations per product id (a simple popularity metric). */
@@ -165,11 +206,13 @@ export class ProductsService {
     return Object.fromEntries(rows.map((r) => [Number(r.productId), Number(r.cnt)]));
   }
 
-  private toPublic(p: Product, bookings = 0) {
+  private toPublic(p: Product, bookings = 0, rating?: RatingSummary) {
     return {
       id: p.id,
       name: p.name,
       description: p.description,
+      rentalRules: p.rentalRules,
+      cancellationPolicy: p.cancellationPolicy,
       pricePerDay: Number(p.pricePerDay),
       currency: p.currency,
       imageUrl: p.imageUrl,
@@ -179,6 +222,8 @@ export class ProductsService {
       category: p.business?.category ?? null,
       location: p.business?.location ?? null,
       bookings,
+      rating: rating?.rating ?? 0,
+      reviewCount: rating?.reviewCount ?? 0,
     };
   }
 

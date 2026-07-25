@@ -3,22 +3,21 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ActivityLogModule } from '../activity-log/activity-log.module';
 import { PlanActiveGuard } from '../auth/guards/plan-active.guard';
 import { Business } from '../businesses/entities/business.entity';
-import { Reservation } from '../reservations/entities/reservation.entity';
 import { ReviewsModule } from '../reviews/reviews.module';
 import { UsersModule } from '../users/users.module';
-import { Product } from './entities/product.entity';
-import { ProductsController } from './products.controller';
-import { ProductsService } from './products.service';
+import { RentalPackage } from './entities/package.entity';
+import { PackagesController } from './packages.controller';
+import { PackagesService } from './packages.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Product, Business, Reservation]),
+    TypeOrmModule.forFeature([RentalPackage, Business]),
     ReviewsModule,
     UsersModule,
     ActivityLogModule,
   ],
-  controllers: [ProductsController],
-  providers: [ProductsService, PlanActiveGuard],
-  exports: [ProductsService],
+  controllers: [PackagesController],
+  providers: [PackagesService, PlanActiveGuard],
+  exports: [PackagesService],
 })
-export class ProductsModule {}
+export class PackagesModule {}

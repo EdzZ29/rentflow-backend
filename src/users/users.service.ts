@@ -117,6 +117,24 @@ export class UsersService {
     return this.usersRepository.save(user);
   }
 
+  /**
+   * Self-service profile update. Guards email uniqueness before delegating to
+   * update() (which handles password hashing). Only name/email/password are
+   * accepted — the caller passes an already-narrowed DTO.
+   */
+  async updateProfile(
+    id: number,
+    dto: { fullName?: string; email?: string; password?: string },
+  ): Promise<User> {
+    if (dto.email) {
+      const existing = await this.findByEmail(dto.email);
+      if (existing && existing.id !== id) {
+        throw new ConflictException('That email is already in use');
+      }
+    }
+    return this.update(id, dto);
+  }
+
   async setAvatar(id: number, avatarUrl: string): Promise<User> {
     await this.usersRepository.update(id, { avatarUrl });
     return this.findOne(id);
