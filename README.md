@@ -1,6 +1,6 @@
-# RentFlow API
+# Rentivo API
 
-NestJS + TypeORM + PostgreSQL backend for RentFlow. Serves both the web
+NestJS + TypeORM + PostgreSQL backend for Rentivo. Serves both the web
 (`fleetflow-frontend`) and mobile (`fleetflow-app`) clients over a JWT-secured
 REST API.
 

@@ -1,4 +1,4 @@
--- RentFlow migration 0004: customer/owner support tickets with an admin chat.
+-- Rentivo migration 0004: customer/owner support tickets with an admin chat.
 --
 -- Run once against production Postgres where DB_SYNCHRONIZE is OFF:
 --   psql "$DATABASE_URL" -f migrations/0004_support_tickets.sql

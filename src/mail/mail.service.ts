@@ -39,14 +39,14 @@ export class MailService {
   async sendPasswordReset(to: string, link: string): Promise<void> {
     const from = this.config.get<string>(
       'MAIL_FROM',
-      'RentFlow <no-reply@rentflow.local>',
+      'Rentivo <no-reply@rentivo.local>',
     );
-    const subject = 'Reset your RentFlow password';
-    const text = `We received a request to reset your RentFlow password.\n\nReset it here (valid for 1 hour):\n${link}\n\nIf you didn't request this, you can safely ignore this email.`;
+    const subject = 'Reset your Rentivo password';
+    const text = `We received a request to reset your Rentivo password.\n\nReset it here (valid for 1 hour):\n${link}\n\nIf you didn't request this, you can safely ignore this email.`;
     const html = `
       <div style="font-family:Arial,Helvetica,sans-serif;max-width:480px;margin:0 auto;color:#0f172a">
         <h2 style="margin:0 0 16px">Reset your password</h2>
-        <p style="color:#475569">We received a request to reset your RentFlow password. This link is valid for 1 hour.</p>
+        <p style="color:#475569">We received a request to reset your Rentivo password. This link is valid for 1 hour.</p>
         <p style="margin:24px 0">
           <a href="${link}" style="background:#0d9488;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block;font-weight:600">Reset password</a>
         </p>

@@ -1,4 +1,4 @@
--- RentFlow migration 0005: richer package pricing presentations.
+-- Rentivo migration 0005: richer package pricing presentations.
 --   • itemValues — per-item standalone prices (shows the bundle saving)
 --   • options    — named option tiers (Option A / Option B)
 --   • tiers      — discount ladder, each with the client's exchange

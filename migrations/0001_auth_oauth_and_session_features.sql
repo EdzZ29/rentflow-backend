@@ -1,4 +1,4 @@
--- RentFlow schema migration for production Postgres (e.g. Supabase), where
+-- Rentivo schema migration for production Postgres (e.g. Supabase), where
 -- DB_SYNCHRONIZE must be OFF. Run this once against your Supabase database
 -- (SQL Editor, or `psql "$DATABASE_URL" -f migrations/0001_...sql`).
 --

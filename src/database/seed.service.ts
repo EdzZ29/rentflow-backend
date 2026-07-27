@@ -36,7 +36,7 @@ export class SeedService implements OnApplicationBootstrap {
     );
 
     await this.usersService.create({
-      fullName: 'RentFlow Admin',
+      fullName: 'Rentivo Admin',
       email,
       password,
       role: UserRole.ADMIN,

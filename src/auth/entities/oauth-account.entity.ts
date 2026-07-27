@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
-// A social identity linked to a RentFlow user. One user can have several
+// A social identity linked to a Rentivo user. One user can have several
 // (e.g. both Google and Facebook), so login by any linked provider resolves to
 // the same account.
 @Entity({ name: 'oauth_accounts' })

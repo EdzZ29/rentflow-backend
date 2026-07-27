@@ -1,4 +1,4 @@
--- RentFlow local database bootstrap.
+-- Rentivo local database bootstrap.
 -- Run once as the `postgres` superuser to create the app role + database.
 --
 --   psql -U postgres -h localhost -p 3000 -f db/setup.sql

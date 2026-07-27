@@ -14,7 +14,7 @@ export enum BusinessStatus {
   PAUSED = 'paused',
 }
 
-// Which RentFlow plan the business is on.
+// Which Rentivo plan the business is on.
 //   BUSINESS    → private internal management only (hidden from the marketplace)
 //   MARKETPLACE → everything in BUSINESS + published publicly to customers
 export enum BusinessPlan {

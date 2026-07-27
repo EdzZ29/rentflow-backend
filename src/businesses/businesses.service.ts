@@ -173,11 +173,20 @@ export class BusinessesService {
     if (!business) {
       throw new NotFoundException('Rental not found');
     }
-    const [rating, products] = await Promise.all([
+    const [rating, breakdown, products] = await Promise.all([
       this.reviews.summaryForBusiness(business.id),
+      this.reviews.breakdownForBusiness(business.id),
       this.products.publicByBusiness(business.id),
     ]);
-    return { ...this.toPublic(business, rating), products };
+    // The business itself has no reviews — `rating` and `ratingBreakdown` are
+    // the overall figures across every item it lists.
+    return {
+      ...this.toPublic(business, rating),
+      ratingBreakdown: breakdown.stars,
+      ratedItemCount: breakdown.ratedItemCount,
+      itemCount: products.length,
+      products,
+    };
   }
 
   /** Only expose safe, non-sensitive fields to the public. */

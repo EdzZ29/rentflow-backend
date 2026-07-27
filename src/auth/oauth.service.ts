@@ -27,7 +27,7 @@ export class OAuthService {
     private readonly authService: AuthService,
   ) {}
 
-  // Resolve a social profile to a RentFlow session, creating/linking as needed.
+  // Resolve a social profile to a Rentivo session, creating/linking as needed.
   async handleOAuthLogin(profile: OAuthProfile) {
     if (!profile.email) {
       throw new OAuthError('no_email');

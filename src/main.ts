@@ -66,6 +66,6 @@ async function bootstrap() {
 
   const port = config.get<number>('PORT', 5000);
   await app.listen(port);
-  console.log(`RentFlow API running on http://localhost:${port}/api`);
+  console.log(`Rentivo API running on http://localhost:${port}/api`);
 }
 bootstrap();

@@ -1,4 +1,4 @@
--- RentFlow migration 0002: per-product rental rules & cancellation policy,
+-- Rentivo migration 0002: per-product rental rules & cancellation policy,
 -- plus a customer product-reviews table (1–5 stars + optional comment).
 --
 -- Run once against production Postgres where DB_SYNCHRONIZE is OFF:

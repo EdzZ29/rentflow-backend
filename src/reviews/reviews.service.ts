@@ -22,6 +22,11 @@ export interface RatingSummary {
   reviewCount: number;
 }
 
+export interface BusinessRatingBreakdown {
+  stars: Record<number, number>; // reviews per star, 1–5
+  ratedItemCount: number; // how many of the business's items have reviews
+}
+
 @Injectable()
 export class ReviewsService {
   constructor(
@@ -137,6 +142,39 @@ export class ReviewsService {
   async summaryForBusiness(businessId: number): Promise<RatingSummary> {
     const map = await this.summaryByBusiness([businessId]);
     return map[businessId] ?? { rating: 0, reviewCount: 0 };
+  }
+
+  // How the business's overall rating breaks down by star, plus how many of
+  // its items have been reviewed. Powers the "overall rating" panel on the
+  // public business page — a business has no reviews of its own, so this is
+  // always an aggregate of its products' reviews.
+  async breakdownForBusiness(
+    businessId: number,
+  ): Promise<BusinessRatingBreakdown> {
+    const [rows, distinct] = await Promise.all([
+      this.reviewsRepository
+        .createQueryBuilder('r')
+        .innerJoin('r.product', 'p')
+        .select('r.rating', 'rating')
+        .addSelect('COUNT(*)', 'cnt')
+        .where('p.businessId = :businessId', { businessId })
+        .groupBy('r.rating')
+        .getRawMany<{ rating: number; cnt: string }>(),
+      // Counted separately: grouping by star would count an item once per star.
+      this.reviewsRepository
+        .createQueryBuilder('r')
+        .innerJoin('r.product', 'p')
+        .select('COUNT(DISTINCT r.productId)', 'items')
+        .where('p.businessId = :businessId', { businessId })
+        .getRawOne<{ items: string }>(),
+    ]);
+
+    const stars: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    for (const row of rows) {
+      stars[Number(row.rating)] = Number(row.cnt);
+    }
+
+    return { stars, ratedItemCount: Number(distinct?.items) || 0 };
   }
 
   // Customer posts (or updates) their review for a product.

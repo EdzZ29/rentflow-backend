@@ -6,13 +6,14 @@ import { NotificationsModule } from '../notifications/notifications.module';
 import { Product } from '../products/entities/product.entity';
 import { RealtimeModule } from '../realtime/realtime.module';
 import { UsersModule } from '../users/users.module';
+import { DETAIL_ENTITIES } from './entities/category-details.entity';
 import { Reservation } from './entities/reservation.entity';
 import { ReservationsController } from './reservations.controller';
 import { ReservationsService } from './reservations.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Reservation, Product]),
+    TypeOrmModule.forFeature([Reservation, Product, ...DETAIL_ENTITIES]),
     NotificationsModule,
     RealtimeModule,
     UsersModule,
