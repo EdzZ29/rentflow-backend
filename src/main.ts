@@ -8,7 +8,9 @@ import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { AppModule } from './app.module';
 import { BUSINESS_UPLOAD_DIR } from './businesses/upload.config';
+import { UploadExceptionFilter } from './common/filters/upload-exception.filter';
 import { PRODUCT_UPLOAD_DIR } from './products/upload.config';
+import { RESERVATION_DOC_UPLOAD_DIR } from './reservations/upload.config';
 import { AVATAR_UPLOAD_DIR } from './users/avatar-upload.config';
 
 async function bootstrap() {
@@ -24,11 +26,20 @@ async function bootstrap() {
   // Parse cookies so the JWT strategy can read the httpOnly auth cookie.
   app.use(cookieParser());
 
-  // Serve uploaded images from /uploads/*.
-  for (const dir of [PRODUCT_UPLOAD_DIR, BUSINESS_UPLOAD_DIR, AVATAR_UPLOAD_DIR]) {
+  // Serve uploaded images from /uploads/*. multer's diskStorage does not create
+  // its destination, so every upload dir has to exist before the first request.
+  for (const dir of [
+    PRODUCT_UPLOAD_DIR,
+    BUSINESS_UPLOAD_DIR,
+    AVATAR_UPLOAD_DIR,
+    RESERVATION_DOC_UPLOAD_DIR,
+  ]) {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
   }
   app.useStaticAssets(join(process.cwd(), 'uploads'), { prefix: '/uploads/' });
+
+  // Turn multer's size/count errors into readable 4xx responses.
+  app.useGlobalFilters(new UploadExceptionFilter());
 
   // All routes are served under /api (e.g. /api/vehicles, /api/auth/login).
   app.setGlobalPrefix('api');
