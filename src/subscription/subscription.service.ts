@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ActivityLogService } from '../activity-log/activity-log.service';
 import { Business } from '../businesses/entities/business.entity';
+import { PaypalService } from '../paypal/paypal.service';
 import { PlanType, User } from '../users/entities/user.entity';
 import {
   businessLimitFor,
@@ -28,7 +29,29 @@ export class SubscriptionService {
     @InjectRepository(Business)
     private readonly businessesRepository: Repository<Business>,
     private readonly activity: ActivityLogService,
+    private readonly paypalService: PaypalService,
   ) {}
+
+  async activatePaypalSubscription(
+    userId: number,
+    subscriptionId: string,
+    plan: PlanType = PlanType.MONTHLY,
+  ) {
+    const paypalDetails =
+      await this.paypalService.verifySubscription(subscriptionId);
+
+    if (
+      paypalDetails.status !== 'ACTIVE' &&
+      paypalDetails.status !== 'APPROVED'
+    ) {
+      throw new BadRequestException(
+        paypalDetails.message ||
+          `PayPal subscription status is ${paypalDetails.status}`,
+      );
+    }
+
+    return this.choosePlan(userId, plan);
+  }
 
   async getSummary(userId: number) {
     const user = await this.getUser(userId);
