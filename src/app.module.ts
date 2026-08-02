@@ -23,6 +23,7 @@ import { SupportModule } from './support/support.module';
 import { TripsModule } from './trips/trips.module';
 import { UsersModule } from './users/users.module';
 import { VehiclesModule } from './vehicles/vehicles.module';
+import { PaypalModule } from './paypal/paypal.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     RealtimeModule,
     NotificationsModule,
     ActivityLogModule,
+    PaypalModule,
   ],
   controllers: [AppController],
   providers: [

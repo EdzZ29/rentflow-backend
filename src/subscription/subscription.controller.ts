@@ -4,7 +4,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
-import { UserRole } from '../users/entities/user.entity';
+import { PlanType, UserRole } from '../users/entities/user.entity';
 import { ChoosePlanDto } from './dto/choose-plan.dto';
 import { SubscriptionService } from './subscription.service';
 
@@ -27,5 +27,17 @@ export class SubscriptionController {
   @Post()
   choosePlan(@Body() dto: ChoosePlanDto, @CurrentUser() user: AuthUser) {
     return this.subscriptionService.choosePlan(user.id, dto.plan);
+  }
+
+  @Post('paypal-activate')
+  activatePaypal(
+    @Body() dto: { subscriptionId: string; plan?: PlanType },
+    @CurrentUser() user: AuthUser,
+  ) {
+    return this.subscriptionService.activatePaypalSubscription(
+      user.id,
+      dto.subscriptionId,
+      dto.plan,
+    );
   }
 }
