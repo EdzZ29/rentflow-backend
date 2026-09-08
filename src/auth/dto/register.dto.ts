@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEmail,
   IsIn,
   IsOptional,
@@ -31,4 +32,12 @@ export class RegisterDto {
   @IsOptional()
   @IsIn([UserRole.CUSTOMER, UserRole.OWNER])
   role?: UserRole.CUSTOMER | UserRole.OWNER;
+
+  // Whether the sign-up form's consent box was ticked. Optional rather than
+  // required so that existing clients and the OAuth/Clerk paths — which never
+  // post this DTO — keep working; when it is true, the acceptance is recorded
+  // against the user with the current policy version.
+  @IsOptional()
+  @IsBoolean()
+  acceptedTerms?: boolean;
 }

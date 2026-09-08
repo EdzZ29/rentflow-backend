@@ -16,7 +16,9 @@ export interface AuthUser {
 
 /** Normalized profile returned by an OAuth strategy's validate(). */
 export interface OAuthProfile {
-  provider: 'google' | 'facebook';
+  // 'clerk' is not a passport strategy — it's the Clerk-hosted identity layer,
+  // which resolves to a Rentivo user through the same link-or-create path.
+  provider: 'google' | 'facebook' | 'clerk';
   providerUserId: string;
   email?: string;
   emailVerified: boolean;

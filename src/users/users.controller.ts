@@ -17,6 +17,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { CreateUserDto } from './dto/create-user.dto';
+import { SetPlanDto } from './dto/set-plan.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserRole } from './entities/user.entity';
 import { UsersService } from './users.service';
@@ -54,6 +55,17 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
   ) {
     return this.usersService.update(id, updateUserDto);
+  }
+
+  // Admin override of an owner's subscription plan (upgrade or downgrade).
+  // Separate from PATCH :id so billing state can't be changed by a profile edit.
+  @Roles(UserRole.ADMIN)
+  @Patch(':id/plan')
+  setPlan(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: SetPlanDto,
+  ) {
+    return this.usersService.setPlan(id, dto.plan);
   }
 
   @Roles(UserRole.ADMIN)

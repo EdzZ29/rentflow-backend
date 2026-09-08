@@ -29,4 +29,10 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  // Set by the sign-up form's consent box. Recorded as a timestamp plus policy
+  // version on the user rather than kept as a bare flag.
+  @IsOptional()
+  @IsBoolean()
+  acceptedTerms?: boolean;
 }

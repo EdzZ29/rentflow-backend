@@ -59,6 +59,17 @@ export class User {
   @Column({ type: 'timestamptz', nullable: true })
   planEndsAt!: Date | null;
 
+  // ── Legal consent ─────────────────────────────────────
+  // When the account holder agreed to the Terms and Privacy Policy, and which
+  // revision they agreed to. Stored rather than assumed, so that after a
+  // policy change it's clear who has and hasn't accepted the current one.
+  // Null on accounts created before consent was recorded.
+  @Column({ type: 'timestamptz', nullable: true })
+  termsAcceptedAt!: Date | null;
+
+  @Column({ type: 'varchar', length: 20, nullable: true })
+  termsVersion!: string | null;
+
   @CreateDateColumn()
   createdAt!: Date;
 

@@ -5,9 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { LEGAL_VERSION } from '../legal/legal.content';
 import * as bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { Repository } from 'typeorm';
+import { PLAN_DURATION_DAYS } from '../subscription/plan-limits';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PlanType, User, UserRole } from './entities/user.entity';
@@ -46,9 +48,15 @@ export class UsersService {
       throw new ConflictException('Email is already registered');
     }
 
-    const { password, ...rest } = createUserDto;
+    const { password, acceptedTerms, ...rest } = createUserDto;
     const passwordHash = await bcrypt.hash(password, 10);
     const user = this.usersRepository.create({ ...rest, passwordHash });
+
+    // Record which revision was agreed to, not just that something was.
+    if (acceptedTerms) {
+      user.termsAcceptedAt = new Date();
+      user.termsVersion = LEGAL_VERSION;
+    }
 
     // New owners start on a 7-day free trial automatically.
     if (user.role === UserRole.OWNER) {
@@ -133,6 +141,40 @@ export class UsersService {
       }
     }
     return this.update(id, dto);
+  }
+
+  /**
+   * Admin override of an owner's plan. Sets the accompanying dates so the
+   * existing plan helpers (effectivePlan / planDaysLeft) stay correct — a plan
+   * written without them would either never expire or look already lapsed.
+   */
+  async setPlan(id: number, plan: PlanType): Promise<User> {
+    const user = await this.findOne(id);
+    const now = new Date();
+
+    user.plan = plan;
+
+    if (plan === PlanType.NONE) {
+      // Downgrade: clear every dated field so nothing keeps the plan alive.
+      user.planStartedAt = null;
+      user.planEndsAt = null;
+      user.trialEndsAt = null;
+    } else if (plan === PlanType.TRIAL) {
+      const trialEnds = new Date(now);
+      trialEnds.setDate(trialEnds.getDate() + TRIAL_DAYS);
+      user.trialEndsAt = trialEnds;
+      user.planStartedAt = now;
+      user.planEndsAt = null;
+    } else {
+      const days = PLAN_DURATION_DAYS[plan] ?? 30;
+      const ends = new Date(now);
+      ends.setDate(ends.getDate() + days);
+      user.planStartedAt = now;
+      user.planEndsAt = ends;
+      user.trialEndsAt = null;
+    }
+
+    return this.usersRepository.save(user);
   }
 
   async setAvatar(id: number, avatarUrl: string): Promise<User> {

@@ -8,6 +8,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import { LegalModule } from './legal/legal.module';
 import { RolesGuard } from './auth/guards/roles.guard';
 import { BusinessesModule } from './businesses/businesses.module';
 import { DatabaseModule } from './database/database.module';
@@ -46,6 +47,7 @@ import { VehiclesModule } from './vehicles/vehicles.module';
     RealtimeModule,
     NotificationsModule,
     ActivityLogModule,
+    LegalModule,
   ],
   controllers: [AppController],
   providers: [

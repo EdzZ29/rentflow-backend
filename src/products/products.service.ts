@@ -139,7 +139,7 @@ export class ProductsService {
       this.bookingCounts(ids),
       this.reviews.summaryByProduct(ids),
     ]);
-    return rows.map((p) => this.toPublic(p, counts[p.id] ?? 0, ratings[p.id]));
+    return rows.map((p) => this.toListItem(p, counts[p.id] ?? 0, ratings[p.id]));
   }
 
   async findPublicOne(id: number) {
@@ -182,7 +182,7 @@ export class ProductsService {
       this.bookingCounts(ids),
       this.reviews.summaryByProduct(ids),
     ]);
-    return rows.map((p) => this.toPublic(p, counts[p.id] ?? 0, ratings[p.id]));
+    return rows.map((p) => this.toListItem(p, counts[p.id] ?? 0, ratings[p.id]));
   }
 
   // Other products from the same business (for the "More from this business"
@@ -204,6 +204,20 @@ export class ProductsService {
       .groupBy('r.productId')
       .getRawMany<{ productId: number; cnt: string }>();
     return Object.fromEntries(rows.map((r) => [Number(r.productId), Number(r.cnt)]));
+  }
+
+  /**
+   * The list shape: everything a card needs and nothing it doesn't.
+   *
+   * `rentalRules` and `cancellationPolicy` are unbounded text columns that no
+   * list view reads — neither the app's cards nor the website's browse grid —
+   * so sending them multiplied the size of every browse response for nothing.
+   * The detail endpoint still returns them via toPublic().
+   */
+  private toListItem(p: Product, bookings = 0, rating?: RatingSummary) {
+    const { rentalRules: _rules, cancellationPolicy: _policy, ...rest } =
+      this.toPublic(p, bookings, rating);
+    return rest;
   }
 
   private toPublic(p: Product, bookings = 0, rating?: RatingSummary) {

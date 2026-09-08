@@ -28,7 +28,19 @@ export class OAuthService {
   ) {}
 
   // Resolve a social profile to a Rentivo session, creating/linking as needed.
-  async handleOAuthLogin(profile: OAuthProfile) {
+  //
+  // `defaultRole` is the role to give a BRAND-NEW user (the Rentivo signup form
+  // asks "renter or business owner?"). It is deliberately ignored for accounts
+  // that already exist: the caller is ultimately relaying a client-supplied
+  // choice, so honouring it on an existing account would let anyone re-run
+  // signup to escalate their own role. Admin is never grantable this way.
+  async handleOAuthLogin(
+    profile: OAuthProfile,
+    defaultRole: UserRole.OWNER | UserRole.CUSTOMER = UserRole.CUSTOMER,
+    // Whether the sign-up form's consent box was ticked. Like `defaultRole`,
+    // this only applies to an account being created for the first time.
+    acceptedTerms = false,
+  ) {
     if (!profile.email) {
       throw new OAuthError('no_email');
     }
@@ -53,13 +65,16 @@ export class OAuthService {
       user = await this.usersService.findByEmail(profile.email);
       if (!user) {
         // 3) Brand-new user → create one. A random password is set; they can
-        //    choose a real one later via "forgot password". Social sign-ups
-        //    default to the customer role.
+        //    choose a real one later via "forgot password".
         user = await this.usersService.create({
           fullName: profile.name || profile.email.split('@')[0],
           email: profile.email,
           password: randomBytes(24).toString('hex'),
-          role: UserRole.CUSTOMER,
+          role: defaultRole,
+          // Consent ticked on the sign-up form that started this flow. Only
+          // meaningful for a brand-new account: an existing user already has
+          // their acceptance on record.
+          acceptedTerms,
         });
       }
       await this.oauthAccounts.save(

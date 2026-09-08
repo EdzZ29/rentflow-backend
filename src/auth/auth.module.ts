@@ -7,6 +7,8 @@ import { MailModule } from '../mail/mail.module';
 import { UsersModule } from '../users/users.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { ClerkController } from './clerk.controller';
+import { ClerkService } from './clerk.service';
 import { OAuthAccount } from './entities/oauth-account.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { OAuthController } from './oauth.controller';
@@ -33,7 +35,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
       }),
     }),
   ],
-  controllers: [AuthController, OAuthController],
+  controllers: [AuthController, OAuthController, ClerkController],
   // GoogleStrategy/FacebookStrategy are always registered; their constructors
   // tolerate missing credentials (they use a placeholder) so the app still boots
   // for password-only setups. The provider routes simply won't work until the
@@ -41,6 +43,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
   providers: [
     AuthService,
     OAuthService,
+    ClerkService,
     PasswordResetService,
     JwtStrategy,
     GoogleStrategy,

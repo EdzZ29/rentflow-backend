@@ -140,6 +140,9 @@ export class AuthController {
       role: u.role,
       plan: u.plan,
       avatarUrl: u.avatarUrl,
+      // Lets a client prompt for re-acceptance after a policy revision.
+      termsAcceptedAt: u.termsAcceptedAt,
+      termsVersion: u.termsVersion,
     };
   }
 }
